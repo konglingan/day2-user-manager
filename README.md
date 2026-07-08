@@ -1,4 +1,4 @@
-# Day2 - User Manager
+# User Manager
 
 基于 Flask 的用户管理系统，包含以下安全功能：
 
