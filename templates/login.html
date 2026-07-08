@@ -4,9 +4,15 @@
 {% block content %}
 <div class="card login-card">
     <h2>用户登录</h2>
+
+    {% if request.args.get('registered') == '1' %}
+        <div class="success-msg">注册成功，请登录</div>
+    {% endif %}
+
     {% if error %}
         <div class="error-msg">{{ error }}</div>
     {% endif %}
+
     <form method="post" action="/login" class="login-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
@@ -19,5 +25,6 @@
         </div>
         <button type="submit" class="btn btn-primary">登录</button>
     </form>
+    <p class="form-footer">还没有账号？<a href="/register">立即注册</a></p>
 </div>
 {% endblock %}

@@ -5,6 +5,8 @@
 ## 功能特性
 
 - 🔐 用户登录 / 登出
+- 📝 用户注册
+- 🔍 用户搜索
 - 🛡️ CSRF 保护（Flask-WTF）
 - ⏱️ 请求频率限制（Flask-Limiter）
 - 🔑 随机生成的强密钥
@@ -42,5 +44,6 @@ python app.py
 └── templates/
     ├── base.html       # 基础模板
     ├── index.html      # 首页
-    └── login.html      # 登录页
+    ├── login.html      # 登录页
+    └── register.html   # 注册页
 ```

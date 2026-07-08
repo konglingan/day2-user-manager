@@ -7,14 +7,51 @@
         <h3>用户信息</h3>
         <ul class="info-list">
             <li><strong>用户名：</strong>{{ user.username }}</li>
-            <!-- 安全修复：已移除密码显示 -->
             <li><strong>邮箱：</strong>{{ user.email }}</li>
             <li><strong>手机：</strong>{{ user.phone }}</li>
             <li><strong>角色：</strong>{{ user.role }}</li>
             <li><strong>余额：</strong>{{ user.balance }}</li>
         </ul>
-        <a href="/logout" class="btn btn-primary">退出登录</a>
     </div>
+
+    <div class="card">
+        <h3>用户搜索</h3>
+        <form method="get" action="/search" class="search-form">
+            <div class="form-group search-group">
+                <input type="text" name="keyword" placeholder="请输入用户名或邮箱搜索" value="{{ keyword or '' }}" class="search-input">
+                <button type="submit" class="btn btn-primary">搜索</button>
+            </div>
+        </form>
+
+        {% if keyword is defined and keyword %}
+            {% if search_results %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>手机</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in search_results %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.username }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.phone }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-result">无搜索结果</p>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <a href="/logout" class="btn btn-primary">退出登录</a>
 {% else %}
     <div class="card">
         <h2>请先登录</h2>
