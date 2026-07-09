@@ -1,10 +1,12 @@
 import os
 import sqlite3
+import uuid
 from datetime import timedelta
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -17,6 +19,19 @@ app.config["SESSION_PERMANENT"] = True
 
 # ========== 安全修复：启用 CSRF 保护 ==========
 csrf = CSRFProtect(app)
+
+# ========== 上传配置：限制最大 16MB ==========
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
+
+# ========== 文件上传安全配置：白名单 ==========
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+ALLOWED_MIMETYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
+
+def allowed_file(filename):
+    """检查文件扩展名是否在白名单中"""
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ========== 安全修复：添加请求频率限制 ==========
 limiter = Limiter(
@@ -162,6 +177,39 @@ def search():
         user_info.pop("password", None)
 
     return render_template("index.html", username=username, user=user_info, search_results=results, keyword=keyword)
+
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    uploaded_url = None
+    error = None
+
+    if request.method == "POST":
+        file = request.files.get("file")
+        if file and file.filename:
+            # 检查文件扩展名
+            if not allowed_file(file.filename):
+                error = "仅允许上传图片文件（jpg、jpeg、png、gif、webp）"
+            # 检查 MIME 类型
+            elif file.content_type not in ALLOWED_MIMETYPES:
+                error = "文件类型不合法"
+            else:
+                # 使用 secure_filename 过滤文件名中的特殊字符
+                safe_name = secure_filename(file.filename)
+                # 提取扩展名并用 UUID 重命名，防止文件覆盖
+                ext = safe_name.rsplit(".", 1)[1].lower() if "." in safe_name else ""
+                filename = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+                save_path = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(save_path)
+                uploaded_url = url_for("static", filename=f"uploads/{filename}")
+        else:
+            error = "请选择要上传的文件"
+
+    return render_template("upload.html", username=username, uploaded_url=uploaded_url, error=error)
 
 
 @app.route("/logout")
