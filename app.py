@@ -75,8 +75,16 @@ def init_db():
         email TEXT,
         phone TEXT
     )''')
+    # 为旧数据库添加 balance 字段（幂等）
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN balance REAL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
     c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('admin', 'admin123', 'admin@example.com', '13800138000')")
     c.execute("INSERT OR IGNORE INTO users (username, password, email, phone) VALUES ('alice', 'alice2025', 'alice@example.com', '13900139001')")
+    # 设置默认用户的初始余额
+    c.execute("UPDATE users SET balance = 99999 WHERE username = 'admin'")
+    c.execute("UPDATE users SET balance = 100 WHERE username = 'alice'")
     conn.commit()
     conn.close()
 
@@ -216,6 +224,76 @@ def upload():
 def logout():
     session.clear()
     return redirect("/")
+
+
+@app.route("/profile")
+def profile():
+    """个人中心：展示当前登录用户的资料"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, username, email, phone, balance FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+
+    if not row:
+        return render_template("profile.html", error="用户不存在", user=None)
+
+    user_data = {
+        "id": row[0],
+        "username": row[1],
+        "email": row[2] or "",
+        "phone": row[3] or "",
+        "balance": row[4] or 0
+    }
+    return render_template("profile.html", user=user_data, error=None)
+
+
+@app.route("/recharge", methods=["POST"])
+def recharge():
+    """充值：仅允许已登录用户为自己充值（金额必须为正数）"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    amount = request.form.get("amount")
+    if not amount:
+        return render_template("profile.html", error="请输入充值金额", user=None)
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        return render_template("profile.html", error="金额格式错误", user=None)
+
+    if amount <= 0:
+        return render_template("profile.html", error="充值金额必须为正数", user=None)
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # 从 session 用户名获取当前用户 ID
+    c.execute("SELECT id FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return redirect("/login")
+    user_id = row[0]
+
+    # 更新余额
+    c.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user_id))
+    conn.commit()
+
+    # 同步内存中的 USERS 字典
+    if username in USERS:
+        c.execute("SELECT balance FROM users WHERE id = ?", (user_id,))
+        bal_row = c.fetchone()
+        USERS[username]["balance"] = bal_row[0]
+
+    conn.close()
+    return redirect("/profile")
 
 
 @app.after_request
