@@ -326,3 +326,47 @@ body {
     gap: 12px;
     margin-top: 16px;
 }
+
+/* === Page Content === */
+.page-content-card {
+    margin-top: 24px;
+}
+
+.page-content-body {
+    font-size: 15px;
+    color: #444;
+    line-height: 1.8;
+}
+
+/* === Help Center === */
+.help-center h2 {
+    color: #333;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #667eea;
+}
+
+.help-section {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f8f9ff;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+}
+
+.help-section h3 {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.help-section p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 0;
+    line-height: 1.6;
+}
+
+.help-section:last-child {
+    margin-bottom: 0;
+}

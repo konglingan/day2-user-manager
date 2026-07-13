@@ -187,6 +187,45 @@ def search():
     return render_template("index.html", username=username, user=user_info, search_results=results, keyword=keyword)
 
 
+@app.route("/page")
+def dynamic_page():
+    """动态页面加载：根据 name 参数读取 pages/ 下的文件并显示"""
+    name = request.args.get("name", "")
+    page_content = ""
+
+    # 安全修复：定义 pages 目录的绝对路径
+    PAGES_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pages")
+
+    if name:
+        # 拼接路径后规范化，防止路径遍历攻击
+        filepath = os.path.realpath(os.path.join(PAGES_BASE, name))
+
+        # 校验路径是否在 pages 目录内
+        if not filepath.startswith(PAGES_BASE):
+            page_content = "页面不存在"
+        elif os.path.exists(filepath) and os.path.isfile(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                page_content = f.read()
+        else:
+            # 尝试加上 .html 后缀再找一次
+            filepath_html = os.path.realpath(os.path.join(PAGES_BASE, name + ".html"))
+            if filepath_html.startswith(PAGES_BASE) and os.path.exists(filepath_html) and os.path.isfile(filepath_html):
+                with open(filepath_html, "r", encoding="utf-8") as f:
+                    page_content = f.read()
+            else:
+                page_content = "页面不存在"
+    else:
+        page_content = "页面不存在"
+
+    username = session.get("username")
+    user_info = None
+    if username and username in USERS:
+        user_info = USERS[username].copy()
+        user_info.pop("password", None)
+
+    return render_template("index.html", username=username, user=user_info, page_content=page_content)
+
+
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
     username = session.get("username")

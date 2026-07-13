@@ -54,8 +54,18 @@
     <div class="action-bar">
         <a href="/profile" class="btn btn-primary">个人中心</a>
         <a href="/upload" class="btn btn-primary">上传头像</a>
+        <a href="/page?name=help" class="btn btn-primary">帮助中心</a>
         <a href="/logout" class="btn btn-primary">退出登录</a>
     </div>
+
+    {% if page_content %}
+    <div class="card page-content-card">
+        <h2>动态页面</h2>
+        <div class="page-content-body">
+            {{ page_content | safe }}
+        </div>
+    </div>
+    {% endif %}
 {% else %}
     <div class="card">
         <h2>请先登录</h2>
