@@ -327,6 +327,16 @@ body {
     margin-top: 16px;
 }
 
+/* === Change Password Card === */
+.change-password-card {
+    margin-top: 24px;
+}
+
+.change-password-card h3 {
+    margin-bottom: 16px;
+    color: #555;
+}
+
 /* === Page Content === */
 .page-content-card {
     margin-top: 24px;

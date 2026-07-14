@@ -335,6 +335,35 @@ def recharge():
     return redirect("/profile")
 
 
+@app.route("/change-password", methods=["POST"])
+def change_password():
+    """修改密码：修改当前登录用户的密码"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    new_password = request.form.get("new_password", "")
+
+    if not new_password:
+        return render_template("profile.html", error="密码不能为空", user=None)
+
+    if len(new_password) > 128:
+        return render_template("profile.html", error="输入内容过长", user=None)
+
+    # 更新 SQLite 数据库中的密码
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE users SET password = ? WHERE username = ?", (new_password, username))
+    conn.commit()
+    conn.close()
+
+    # 同步更新内存中的 USERS 字典
+    if username in USERS:
+        USERS[username]["password"] = new_password
+
+    return redirect("/profile")
+
+
 @app.after_request
 def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
