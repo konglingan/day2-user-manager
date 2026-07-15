@@ -1,7 +1,12 @@
 import os
 import sqlite3
 import uuid
+import ipaddress
+import socket
+import urllib.request
+import urllib.error
 from datetime import timedelta
+from urllib.parse import urlparse
 from flask import Flask, render_template, request, redirect, session, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -257,6 +262,89 @@ def upload():
             error = "请选择要上传的文件"
 
     return render_template("upload.html", username=username, uploaded_url=uploaded_url, error=error)
+
+
+@app.route("/fetch-url", methods=["POST"])
+def fetch_url():
+    """URL 抓取：访问用户提交的 URL 并返回响应内容（含 SSRF 防护）"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    url = request.form.get("url", "").strip()
+    fetch_status = None
+    fetch_content = ""
+
+    if url:
+        # ===== SSRF 防护 1：协议白名单 =====
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            fetch_status = "拒绝"
+            fetch_content = "不允许的协议，仅支持 http:// 和 https://"
+            return render_template(
+                "index.html", username=username, user=USERS.get(username),
+                fetch_status=fetch_status, fetch_content=fetch_content, fetch_url=url,
+            )
+
+        # ===== SSRF 防护 2：内网地址拦截 =====
+        try:
+            hostname = parsed.hostname
+            # 解析域名得到所有 IP 地址
+            addrs = socket.getaddrinfo(hostname, None)
+            for addr in addrs:
+                ip = ipaddress.ip_address(addr[4][0])
+                if ip.is_private or ip.is_loopback or ip.is_link_local:
+                    fetch_status = "拒绝"
+                    fetch_content = f"目标地址 {ip} 为内网/回环地址，禁止访问"
+                    return render_template(
+                        "index.html", username=username, user=USERS.get(username),
+                        fetch_status=fetch_status, fetch_content=fetch_content, fetch_url=url,
+                    )
+                # 拦截云元数据地址
+                if ip == ipaddress.ip_address("169.254.169.254"):
+                    fetch_status = "拒绝"
+                    fetch_content = "目标地址为云元数据服务地址，禁止访问"
+                    return render_template(
+                        "index.html", username=username, user=USERS.get(username),
+                        fetch_status=fetch_status, fetch_content=fetch_content, fetch_url=url,
+                    )
+        except (socket.gaierror, ValueError) as e:
+            fetch_status = "拒绝"
+            fetch_content = f"无法解析目标地址：{str(e)}"
+            return render_template(
+                "index.html", username=username, user=USERS.get(username),
+                fetch_status=fetch_status, fetch_content=fetch_content, fetch_url=url,
+            )
+
+        # ===== SSRF 防护通过，执行请求 =====
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=10) as response:
+                fetch_status = response.status
+                raw = response.read()
+                try:
+                    content = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    content = raw.decode("utf-8", errors="replace")
+                fetch_content = content[:5000]
+        except urllib.error.HTTPError as e:
+            fetch_status = e.code
+            fetch_content = f"HTTP 错误：{e.code} {e.reason}"
+        except urllib.error.URLError as e:
+            fetch_status = "失败"
+            fetch_content = f"URL 访问失败：{e.reason}"
+        except Exception as e:
+            fetch_status = "错误"
+            fetch_content = f"发生异常：{str(e)}"
+
+    return render_template(
+        "index.html",
+        username=username,
+        user=USERS.get(username),
+        fetch_status=fetch_status,
+        fetch_content=fetch_content,
+        fetch_url=url,
+    )
 
 
 @app.route("/logout")

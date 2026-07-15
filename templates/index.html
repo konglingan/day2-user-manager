@@ -51,6 +51,28 @@
         {% endif %}
     </div>
 
+    <div class="card">
+        <h3>URL 抓取</h3>
+        <form method="post" action="/fetch-url" class="fetch-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group search-group">
+                <input type="text" name="url" placeholder="请输入要抓取的 URL，例如 http://example.com" value="{{ fetch_url or '' }}" class="search-input">
+                <button type="submit" class="btn btn-primary">抓取</button>
+            </div>
+        </form>
+
+        {% if fetch_status is defined and fetch_status %}
+            <div class="fetch-result">
+                <p><strong>抓取 URL：</strong>{{ fetch_url }}</p>
+                <p><strong>状态码：</strong><span class="status-code">{{ fetch_status }}</span></p>
+                <div class="fetch-content-box">
+                    <strong>响应内容（前 5000 字符）：</strong>
+                    <pre class="fetch-content">{{ fetch_content }}</pre>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
     <div class="action-bar">
         <a href="/profile" class="btn btn-primary">个人中心</a>
         <a href="/upload" class="btn btn-primary">上传头像</a>
