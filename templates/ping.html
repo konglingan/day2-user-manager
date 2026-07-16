@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Ping 测试 - 用户管理系统{% endblock %}
+{% block content %}
+<div class="card ping-card">
+    <h2>Ping 网络诊断</h2>
+    <p>输入 IP 地址或域名进行网络连通性测试</p>
+
+    <form method="post" action="/ping" class="ping-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group search-group">
+            <input type="text" name="ip" placeholder="请输入 IP 地址或域名，例如 8.8.8.8" class="search-input" required>
+            <button type="submit" class="btn btn-primary">Ping</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+        <div class="ping-output-box">
+            <div class="ping-output-header">
+                <span class="ping-label">Ping 输出结果</span>
+            </div>
+            <pre class="ping-output">{{ result }}</pre>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

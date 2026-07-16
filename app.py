@@ -1,4 +1,6 @@
 import os
+import subprocess
+import platform
 import sqlite3
 import uuid
 import ipaddress
@@ -345,6 +347,51 @@ def fetch_url():
         fetch_content=fetch_content,
         fetch_url=url,
     )
+
+
+@app.route("/ping", methods=["GET", "POST"])
+def ping():
+    """Ping 网络诊断：执行系统 ping 命令并返回结果"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    result = None
+    error = None
+
+    if request.method == "POST":
+        ip = request.form.get("ip", "").strip()
+        if ip:
+            # 校验输入是否为合法的 IP 地址或域名
+            is_valid = False
+            try:
+                ipaddress.ip_address(ip)
+                is_valid = True
+            except ValueError:
+                # 不是 IP 地址时，检查是否为合法的域名
+                import re
+                domain_pattern = r"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$"
+                if re.match(domain_pattern, ip) and "." in ip:
+                    is_valid = True
+
+            if not is_valid:
+                error = "输入的地址格式不合法，请输入有效的 IP 地址或域名"
+            else:
+                try:
+                    # 使用列表形式传递命令参数，绕过 shell 解析，防止命令注入
+                    command = ["ping", "-c", "3", ip]
+                    result = subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=30)
+                    result = result.decode("utf-8", errors="replace")
+                except subprocess.CalledProcessError as e:
+                    error = e.output.decode("utf-8", errors="replace") if e.output else f"命令执行失败，返回码：{e.returncode}"
+                except subprocess.TimeoutExpired:
+                    error = "Ping 超时（30 秒）"
+                except Exception as e:
+                    error = f"执行异常：{str(e)}"
+        else:
+            error = "请输入 IP 地址或域名"
+
+    return render_template("ping.html", username=username, result=result, error=error)
 
 
 @app.route("/logout")
