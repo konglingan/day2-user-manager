@@ -1,6 +1,6 @@
 # 用户管理系统 (User Manager)
 
-一个基于 **Flask** 构建的轻量级用户管理系统，支持用户注册、登录、信息搜索、头像上传、余额充值、密码修改、URL 抓取、Ping 网络诊断等功能，并集成了多项 Web 安全防护措施。
+一个基于 **Flask** 构建的轻量级用户管理系统，支持用户注册、登录、信息搜索、头像上传、余额充值、密码修改、URL 抓取、Ping 网络诊断、XML 数据导入等功能，并集成了多项 Web 安全防护措施。
 
 ## 功能特性
 
@@ -9,6 +9,7 @@
 - **头像上传**：支持图片上传（jpg / jpeg / png / gif / webp），UUID 重命名防覆盖
 - **URL 抓取**：登录用户可提交 URL 抓取远程页面内容（含 SSRF 防护）
 - **Ping 网络诊断**：登录用户可对 IP 地址或域名执行 Ping 测试（含命令注入防护）
+- **XML 数据导入**：登录用户可提交 XML 数据，安全解析提取用户信息（使用 defusedxml，防御 XXE 攻击）
 - **个人中心**：查看个人信息与账户余额
 - **余额充值**：登录用户可为自己的账户充值
 - **密码修改**：登录用户可在个人中心修改自己的密码
@@ -22,6 +23,7 @@
   - 路径遍历攻击防护
   - SSRF 防护（协议白名单 + 内网地址拦截 + 云元数据地址拦截）
   - 命令注入防护（Ping 功能使用列表传参绕过 shell 解析）
+  - XXE 防护（XML 导入使用 defusedxml 安全解析，默认禁用外部实体）
   - 安全响应头（X-Content-Type-Options、X-Frame-Options、X-XSS-Protection）
 
 ## 技术栈
@@ -33,6 +35,7 @@
 | 模板引擎   | Jinja2                        |
 | CSRF 保护  | Flask-WTF                     |
 | 频率限制   | Flask-Limiter                 |
+| XML 安全   | defusedxml                    |
 | 前端样式   | 原生 CSS                      |
 
 ## 项目结构
@@ -48,7 +51,8 @@
 │   ├── register.html       # 注册页
 │   ├── profile.html        # 个人中心（含充值、修改密码）
 │   ├── upload.html         # 头像上传页
-│   └── ping.html           # Ping 测试页
+│   ├── ping.html           # Ping 测试页
+│   └── xml_import.html     # XML 数据导入页
 ├── pages/                  # 静态页面（动态加载）
 │   └── help.html           # 帮助中心
 ├── static/
@@ -113,6 +117,7 @@ python app.py
 | `/upload`         | GET/POST | 头像上传         | 是       |
 | `/fetch-url`      | POST     | URL 抓取         | 是       |
 | `/ping`           | GET/POST | Ping 网络诊断    | 是       |
+| `/xml-import`     | GET/POST | XML 数据导入     | 是       |
 | `/page`           | GET      | 动态页面加载     | 否       |
 
 ## 安全说明
@@ -124,8 +129,9 @@ python app.py
 3. **路径遍历防护**：动态页面加载使用 `os.path.realpath` 规范化路径并校验前缀
 4. **SSRF 防护**：URL 抓取功能实施协议白名单（仅 http/https）、DNS 解析拦截内网/回环/链路本地地址、以及云元数据服务地址（169.254.169.254）拦截
 5. **命令注入防护**：Ping 功能使用列表形式（`["ping", "-c", "3", ip]`）传递命令参数，绕过 shell 解析，防止命令注入攻击；同时对输入进行 IP 地址和域名格式校验
-6. **频率限制**：防止暴力破解与滥用
-7. **安全响应头**：`X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`X-XSS-Protection: 1; mode=block`
+6. **XXE 防护**：XML 导入使用 defusedxml 安全解析，默认禁用外部实体，防御 XXE 攻击
+7. **频率限制**：防止暴力破解与滥用
+8. **安全响应头**：`X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`X-XSS-Protection: 1; mode=block`
 
 ## License
 
