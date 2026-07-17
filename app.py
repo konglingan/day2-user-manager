@@ -1,4 +1,6 @@
 import os
+import re
+import json
 import subprocess
 import platform
 import sqlite3
@@ -497,6 +499,45 @@ def change_password():
         USERS[username]["password"] = new_password
 
     return redirect("/profile")
+
+
+@app.route("/xml-import", methods=["GET", "POST"])
+def xml_import():
+    """XML 数据导入：安全解析 XML，提取用户信息"""
+    username = session.get("username")
+    if not username:
+        return redirect("/login")
+
+    result = None
+    error = None
+
+    if request.method == "POST":
+        xml_data = request.form.get("xml_data", "").strip()
+        if not xml_data:
+            error = "请输入 XML 数据"
+        else:
+            try:
+                # 使用 defusedxml 安全解析 XML（默认禁用外部实体，防御 XXE）
+                from defusedxml.ElementTree import fromstring
+                root = fromstring(xml_data)
+
+                # 提取 user 节点的 name 和 email
+                users = []
+                for user_elem in root.iter("user"):
+                    name_elem = user_elem.find("name")
+                    email_elem = user_elem.find("email")
+                    if name_elem is not None and email_elem is not None:
+                        users.append({
+                            "name": name_elem.text,
+                            "email": email_elem.text
+                        })
+
+                result = json.dumps(users, ensure_ascii=False, indent=2)
+
+            except Exception as e:
+                error = f"XML 解析失败：{str(e)}"
+
+    return render_template("xml_import.html", username=username, result=result, error=error)
 
 
 @app.after_request

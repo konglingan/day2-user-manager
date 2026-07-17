@@ -470,3 +470,66 @@ body {
     word-break: break-all;
     font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
 }
+
+/* === XML Import === */
+.xml-card {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.xml-card p {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.xml-card code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: #d63384;
+}
+
+.xml-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+    line-height: 1.6;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.xml-textarea:focus {
+    border-color: #667eea;
+}
+
+.xml-result {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.xml-result h3 {
+    color: #27ae60;
+    margin-bottom: 12px;
+}
+
+.xml-output {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: 500px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+}
